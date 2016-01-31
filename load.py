@@ -1,6 +1,6 @@
 import gzip
 import os
-import numpy
+import numpy as np
 import tensorflow as tf
 from numpy import genfromtxt
 
@@ -62,6 +62,12 @@ class DataSet(object):
     end = self._index_in_epoch
     return self._inputs[start:end], self._labels[start:end]
 
+def normalize (raw):
+    mins = np.amin(raw,axis=0)
+    offset = map (lambda x: x if x >= 0 else -x, mins)
+    positive = np.add(raw, offset)
+    maxs = np.amax(positive,axis=0)
+    return np.true_divide(positive,maxs)
 
 def read_data_sets(dataf, labelsf, validation, test, dtype=tf.float32):
   class DataSets(object):
@@ -69,8 +75,8 @@ def read_data_sets(dataf, labelsf, validation, test, dtype=tf.float32):
   data_sets = DataSets()
 
   data = extract_data(dataf)
+  data = normalize(data)
   labels = extract_data(labelsf)
-
   size = len(labels)
 
   validation_s = int(size * validation)
@@ -99,4 +105,3 @@ def read_data_sets(dataf, labelsf, validation, test, dtype=tf.float32):
 
   return data_sets
 
-read_data_sets ('data','labels',0.3,0.1)
