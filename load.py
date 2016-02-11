@@ -51,8 +51,8 @@ class DataSet(object):
       # Finished epoch
       self._epochs_completed += 1
       # Shuffle the data
-      perm = numpy.arange(self._num_examples)
-      numpy.random.shuffle(perm)
+      perm = np.arange(self._num_examples)
+      np.random.shuffle(perm)
       self._inputs = self._inputs[perm]
       self._labels = self._labels[perm]
       # Start next epoch
@@ -69,16 +69,15 @@ def normalize (raw):
     maxs = np.amax(positive,axis=0)
     return np.true_divide(positive,maxs)
 
-def read_data_sets(dataf, labelsf, validation, test, dtype=tf.float32):
+def read_data_sets(datad, validation, test, dtype=tf.float32, num=0):
   class DataSets(object):
     pass
   data_sets = DataSets()
 
-  data = extract_data(dataf)
-  data = normalize(data)
-  labels = extract_data(labelsf)
+  data = extract_data(dataf) if num == 0 else extract_data(dataf)[:num]
+  # data = normalize(data)
+  labels = extract_data(labelsf)[:,None] if num == 0 else  extract_data(labelsf)[:num,None]
   size = len(labels)
-
   validation_s = int(size * validation)
 
   test_s = int(size * test)
@@ -104,4 +103,3 @@ def read_data_sets(dataf, labelsf, validation, test, dtype=tf.float32):
   data_sets.test = DataSet(test_data, test_labels, dtype=dtype)
 
   return data_sets
-
