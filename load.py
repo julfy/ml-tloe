@@ -5,18 +5,28 @@ import numpy as np
 import tensorflow as tf
 import numpy as np
 
+# def normalize (raw):
+#     mins = np.amin(raw,axis=0)
+#     offset = map (lambda x: x if x >= 0 else -x, mins)
+#     positive = np.add(raw, offset)
+#     maxs = np.amax(positive,axis=0)
+#     return np.true_divide(positive,maxs)
+
 def extract_data (dir):
     filelist = glob.glob(dir)
-    res = []
+    inps = []
+    labels = []
     for filename in filelist:
         data = np.genfromtxt(filename, delimiter=',')
         if len(data) == 0:
             continue
-        if len(res) == 0 :
-            res = data
+        if len(inps) == 0 :
+            inps = data[:,1:]
+            labels = data[:,0]
         else:
-            res = np.append(res, data, axis=0)
-    return res
+            inps = np.append(inps, data[:,1:], axis=0)
+            labels = np.append(labels, data[:,0], axis=0)
+    return inps, labels[:,None]
 
 class DataSet(object):
 
@@ -80,21 +90,13 @@ class DataSet(object):
     end = self._index_in_epoch
     return self._inputs[start:end], self._labels[start:end]
 
-# def normalize (raw):
-#     mins = np.amin(raw,axis=0)
-#     offset = map (lambda x: x if x >= 0 else -x, mins)
-#     positive = np.add(raw, offset)
-#     maxs = np.amax(positive,axis=0)
-#     return np.true_divide(positive,maxs)
-
 def read_data_sets(datad, validation, test, dtype=tf.float32, num=0):
   class DataSets(object):
     pass
   data_sets = DataSets()
 
-  data = extract_data(datad) if num == 0 else extract_data(datad)[:num]
-  # data = normalize(data)
-  labels = np.asarray([1]*10 + [0]*(len(data)-10))[:,None]
+  data, labels = extract_data(datad) if num == 0 else extract_data(datad)[:num]
+
   size = len(labels)
   validation_s = int(size * validation)
 

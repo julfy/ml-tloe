@@ -10,7 +10,7 @@ space = [hp.quniform('lr', 0.00001, 1, 0.00001),
          hp.quniform('fhl', 10, 200, 10),
          hp.quniform('shl', 10, 200, 10)]
 
-transform.transform_data ("/home/julfy/work/ml-tloe/serps/results/*", 'dataset', 10000)
+transform.transform_data ("/home/bogdan/work/ml-tloe/serps/results/*", 'dataset', 1000)
 
 data = load.read_data_sets ('dataset/*',0.3,0.1, num = 3000000)
 

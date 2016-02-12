@@ -21,7 +21,8 @@ def process(jsn):
         url_len = len(re.sub(r"www\.","", urlparse(res['url']).hostname))
         metrics = res['metrics']
         social = [0,0,0,0,0,0,0,0,0] if res['social'] == [] else res['social']
-        inp = social + [res['ahrefs_rank'],
+        label = 1 if i < 10 else 0
+        inp = [label] + social + [res['ahrefs_rank'],
                         res['domain_rating'],
                         metrics.get('backlinks',0),
                         metrics.get('refpages',0),
@@ -52,6 +53,9 @@ def transform_data(dir, outd, num=0):
     filelist = glob.glob(dir)
     i = 0
     failed = 0
+    outs = 0
+    limit = 100000 #rows
+    cur = 0
     for filename in filelist:
         if num > 0 and i >= num:
             break
@@ -68,8 +72,12 @@ def transform_data(dir, outd, num=0):
             data = process(d)
             if len(data) == 0:
                 continue
-            with open(outd+'/'+str(i), 'ab') as f:
+            if cur > limit:
+                outs = outs + 1
+                cur = 0
+            cur = cur + len(data)
+            with open(outd+'/'+str(outs), 'ab') as f:
                 writer = csv.writer(f)
                 writer.writerows(data)
         i = i + 1
-    print "Transformed", i, "files (", failed, "failed )"
+    print "Transformed", i, "files (", failed, "failed ) to", outs + 1, "files"
