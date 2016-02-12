@@ -5,16 +5,17 @@ import numpy as np
 import tensorflow as tf
 import numpy as np
 
-def extract_data (dir, cond):
-    filelist = filter (lambda s: s[-2:] == cond, glob.glob(dir))
+def extract_data (dir):
+    filelist = glob.glob(dir)
     res = []
     for filename in filelist:
         data = np.genfromtxt(filename, delimiter=',')
-        if res == [] :
+        if len(data) == 0:
+            continue
+        if len(res) == 0 :
             res = data
         else:
             res = np.append(res, data, axis=0)
-    print res
     return res
 
 class DataSet(object):
@@ -52,6 +53,12 @@ class DataSet(object):
   def epochs_completed(self):
     return self._epochs_completed
 
+  def num_batch (self, batch_size):
+      if batch_size < self._num_examples :
+          return int(self._num_examples / batch_size)
+      else:
+          return 1
+
   def next_batch(self, batch_size):
     """Return the next `batch_size` examples from this data set."""
     start = self._index_in_epoch
@@ -66,26 +73,28 @@ class DataSet(object):
       self._labels = self._labels[perm]
       # Start next epoch
       start = 0
-      self._index_in_epoch = batch_size
-      assert batch_size <= self._num_examples
+      if batch_size < self._num_examples :
+          self._index_in_epoch = batch_size
+      else:
+          self._index_in_epoch = self._num_examples - 1
     end = self._index_in_epoch
     return self._inputs[start:end], self._labels[start:end]
 
-def normalize (raw):
-    mins = np.amin(raw,axis=0)
-    offset = map (lambda x: x if x >= 0 else -x, mins)
-    positive = np.add(raw, offset)
-    maxs = np.amax(positive,axis=0)
-    return np.true_divide(positive,maxs)
+# def normalize (raw):
+#     mins = np.amin(raw,axis=0)
+#     offset = map (lambda x: x if x >= 0 else -x, mins)
+#     positive = np.add(raw, offset)
+#     maxs = np.amax(positive,axis=0)
+#     return np.true_divide(positive,maxs)
 
 def read_data_sets(datad, validation, test, dtype=tf.float32, num=0):
   class DataSets(object):
     pass
   data_sets = DataSets()
 
-  data = extract_data(datad,'-i') if num == 0 else extract_data(datad,'-i')[:num]
+  data = extract_data(datad) if num == 0 else extract_data(datad)[:num]
   # data = normalize(data)
-  labels = extract_data(datad,'-l')[:,None] if num == 0 else  extract_data(datad,'-l')[:num,None]
+  labels = np.asarray([1]*10 + [0]*(len(data)-10))[:,None]
   size = len(labels)
   validation_s = int(size * validation)
 

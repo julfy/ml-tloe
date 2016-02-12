@@ -15,12 +15,7 @@ def check_match (keywords, s2):
 def process(jsn):
     i = 0
     data = []
-    labels = []
     for res in jsn['urls']:
-        if i < 10:
-            label = 1
-        else:
-            label = 0
         common_content = check_match (jsn['keyword'], res['content'])
         common_url = check_match (jsn['keyword'],urlparse(res['url']).path+urlparse(res['url']).hostname)
         url_len = len(re.sub(r"www\.","", urlparse(res['url']).hostname))
@@ -49,9 +44,8 @@ def process(jsn):
                         common_content,
                         url_len]
         data.append(inp)
-        labels.append([label])
         i += 1
-    return data,labels
+    return data
 
 def transform_data(dir, outd, num=0):
     os.mkdir(outd, 0755)
@@ -71,12 +65,11 @@ def transform_data(dir, outd, num=0):
                 print "Error in : ", filename
                 failed = failed + 1
                 continue
-            data,labels = process(d)
-            with open(outd+'/'+str(i)+'-i', 'ab') as f:
+            data = process(d)
+            if len(data) == 0:
+                continue
+            with open(outd+'/'+str(i), 'ab') as f:
                 writer = csv.writer(f)
                 writer.writerows(data)
-            with open(outd+'/'+str(i)+'-l', 'ab') as f:
-                writer = csv.writer(f)
-                writer.writerows(labels)
         i = i + 1
     print "Transformed", i, "files (", failed, "failed )"

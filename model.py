@@ -56,7 +56,7 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
             #training
             for epoch in range(training_epochs):
                 avg_cost = 0.
-                total_batch = int(dataset.train.num_examples/batch_size)
+                total_batch = dataset.train.num_batch(batch_size)
                 
                 for i in range(total_batch):
                     batch_xs, batch_ys = dataset.train.next_batch(batch_size)
