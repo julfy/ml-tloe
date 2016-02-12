@@ -1,6 +1,6 @@
 import model
+import transform
 import load
-import input_data
 from hyperopt import fmin, tpe, hp
 import numpy
 numpy.set_printoptions(threshold='nan')
@@ -10,7 +10,9 @@ space = [hp.quniform('lr', 0.00001, 1, 0.00001),
          hp.quniform('fhl', 10, 200, 10),
          hp.quniform('shl', 10, 200, 10)]
 
-data = load.read_data_sets ('data','labels',0.3,0.1, num = 1000000)
+transform.transform_data ("/home/bogdan/Downloads/results/*", 'dataset', 100)
+
+data = load.read_data_sets ('dataset/*',0.3,0.1, num = 2)
 
 model.train_once (data, 0.02, 50000, 0, ermul=10, H1=200, H2=100)
 

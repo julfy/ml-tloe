@@ -54,7 +54,7 @@ def process(jsn):
     return data,labels
 
 def transform_data(dir, outd, num=0):
-    os.mkdir(outd, 0755 )
+    os.mkdir(outd, 0755)
     filelist = glob.glob(dir)
     i = 0
     failed = 0
@@ -72,13 +72,11 @@ def transform_data(dir, outd, num=0):
                 failed = failed + 1
                 continue
             data,labels = process(d)
-            with open(outd+'/'+str(i)+'-inputs', 'ab') as f:
+            with open(outd+'/'+str(i)+'-i', 'ab') as f:
                 writer = csv.writer(f)
                 writer.writerows(data)
-            with open(outd+'/'+str(i)+'-labels', 'ab') as f:
+            with open(outd+'/'+str(i)+'-l', 'ab') as f:
                 writer = csv.writer(f)
                 writer.writerows(labels)
         i = i + 1
     print "Transformed", i, "files (", failed, "failed )"
-
-transform_data ("/home/julfy/work/ml-tloe/serps/results/*", 'dataset', 100)

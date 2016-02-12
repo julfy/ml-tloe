@@ -1,12 +1,21 @@
 import gzip
 import os
+import glob
 import numpy as np
 import tensorflow as tf
-from numpy import genfromtxt
+import numpy as np
 
-def extract_data (filename):
-    data = genfromtxt(filename, delimiter=',')
-    return data
+def extract_data (dir, cond):
+    filelist = filter (lambda s: s[-2:] == cond, glob.glob(dir))
+    res = []
+    for filename in filelist:
+        data = np.genfromtxt(filename, delimiter=',')
+        if res == [] :
+            res = data
+        else:
+            res = np.append(res, data, axis=0)
+    print res
+    return res
 
 class DataSet(object):
 
@@ -74,9 +83,9 @@ def read_data_sets(datad, validation, test, dtype=tf.float32, num=0):
     pass
   data_sets = DataSets()
 
-  data = extract_data(dataf) if num == 0 else extract_data(dataf)[:num]
+  data = extract_data(datad,'-i') if num == 0 else extract_data(datad,'-i')[:num]
   # data = normalize(data)
-  labels = extract_data(labelsf)[:,None] if num == 0 else  extract_data(labelsf)[:num,None]
+  labels = extract_data(datad,'-l')[:,None] if num == 0 else  extract_data(datad,'-l')[:num,None]
   size = len(labels)
   validation_s = int(size * validation)
 
