@@ -7,43 +7,77 @@ import math
 # num_inputs = 31
 
 training_epochs = 750
-display_step = 749
+display_step = 100
 
-num_inputs = 31
+num_inputs = 41
 NUM_CLASSES = 1
 
 def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
-
+    P1 = 10
     # description
     with tf.Graph().as_default():
         x = tf.placeholder("float", [None, num_inputs])
         y = tf.placeholder("float", [None, NUM_CLASSES])
 
-        h1w = tf.Variable(tf.truncated_normal([num_inputs, H1], stddev = 1.0 / math.sqrt(float(num_inputs))), name="h1w")
-        h2w = tf.Variable(tf.truncated_normal([H1,H2], stddev = 1.0 / math.sqrt(float(H1))), name="h2w")
-        outw = tf.Variable(tf.truncated_normal([H2, NUM_CLASSES], stddev = 1.0 / math.sqrt(float(H2))), name="softmax")
+        h11w = tf.Variable(tf.truncated_normal([num_inputs, H1], stddev = 1.0 / math.sqrt(float(num_inputs))), name="h11w")
+        h12w = tf.Variable(tf.truncated_normal([num_inputs, H1], stddev = 1.0 / math.sqrt(float(num_inputs))), name="h12w")
+        h13w = tf.Variable(tf.truncated_normal([num_inputs, H1], stddev = 1.0 / math.sqrt(float(num_inputs))), name="h13w")
+        h14w = tf.Variable(tf.truncated_normal([num_inputs, H1], stddev = 1.0 / math.sqrt(float(num_inputs))), name="h14w")
+        h15w = tf.Variable(tf.truncated_normal([num_inputs, H1], stddev = 1.0 / math.sqrt(float(num_inputs))), name="h15w")
         h1b = tf.Variable(tf.zeros([H1]), name='h1b')
+        h2b = tf.Variable(tf.zeros([H1]), name='h2b')
+        h3b = tf.Variable(tf.zeros([H1]), name='h3b')
+        h4b = tf.Variable(tf.zeros([H1]), name='h4b')
+        h5b = tf.Variable(tf.zeros([H1]), name='h5b')
+
+        p11w = tf.Variable(tf.truncated_normal([H1,P1], stddev = 1.0 / math.sqrt(float(H1))), name="p11w")
+        p12w = tf.Variable(tf.truncated_normal([H1,P1], stddev = 1.0 / math.sqrt(float(H1))), name="p12w")
+        p13w = tf.Variable(tf.truncated_normal([H1,P1], stddev = 1.0 / math.sqrt(float(H1))), name="p13w")
+        p14w = tf.Variable(tf.truncated_normal([H1,P1], stddev = 1.0 / math.sqrt(float(H1))), name="p14w")
+        p15w = tf.Variable(tf.truncated_normal([H1,P1], stddev = 1.0 / math.sqrt(float(H1))), name="p15w")
+        p1b = tf.Variable(tf.zeros([P1]), name='p1b')
+        p2b = tf.Variable(tf.zeros([P1]), name='p2b')
+        p3b = tf.Variable(tf.zeros([P1]), name='p3b')
+        p4b = tf.Variable(tf.zeros([P1]), name='p4b')
+        p5b = tf.Variable(tf.zeros([P1]), name='p5b')
+        
+        h2w = tf.Variable(tf.truncated_normal([P1*5,H2], stddev = 1.0 / math.sqrt(float(P1*5))), name="h2w")
         h2b = tf.Variable(tf.zeros([H2]), name='h2b')
-        smb = tf.Variable(tf.zeros([NUM_CLASSES]), name='smb')
+
+        outw = tf.Variable(tf.truncated_normal([H2, NUM_CLASSES], stddev = 1.0 / math.sqrt(float(H2))), name="outw")
+        smb = tf.Variable(tf.zeros([NUM_CLASSES]), name='outb')
 
         def feed(_x):
-            h1 = tf.nn.relu (tf.matmul(_x, h1w) + h1b)
-            h2 = tf.nn.relu (tf.matmul(h1, h2w) + h2b)
-            out = tf.sigmoid (tf.matmul(h2, outw) + smb)
+            h11 = tf.nn.relu (tf.matmul(_x, h11w) + h1b, name='h11')
+            h12 = tf.nn.relu (tf.matmul(_x, h12w) + h2b, name='h12')
+            h13 = tf.nn.relu (tf.matmul(_x, h13w) + h3b, name='h13')
+            h14 = tf.nn.relu (tf.matmul(_x, h14w) + h4b, name='h14')
+            h15 = tf.nn.relu (tf.matmul(_x, h15w) + h5b, name='h15')
+            
+            p11 = tf.nn.relu (tf.matmul(h11, p11w) + p1b, name='p11')
+            p12 = tf.nn.relu (tf.matmul(h12, p12w) + p2b, name='p12')
+            p13 = tf.nn.relu (tf.matmul(h13, p13w) + p3b, name='p13')
+            p14 = tf.nn.relu (tf.matmul(h14, p14w) + p4b, name='p14')
+            p15 = tf.nn.relu (tf.matmul(h15, p15w) + p5b, name='p15')
+
+            p1 = tf.concat(1, [p11, p12, p13, p14, p15], name = 'merge')
+            h2 = tf.nn.relu (tf.matmul(p1, h2w) + h2b, name = 'h2')
+            out = tf.sigmoid (tf.matmul(h2, outw) + smb, name = 'out')
             return out
 
         normed = tf.nn.l2_normalize(x,1)
         pred = feed(normed)
         sqr_dif = tf.square(y - pred)
         sda = sqr_dif * (1 + y * (ermul-1 if ermul > 1 else 0))
-        cost = tf.reduce_sum(sda) + (tf.reduce_sum(tf.square(h1w)) +
-                                     tf.reduce_sum(tf.square(h2w)) +
-                                     tf.reduce_sum(tf.square(outw))) * lmbda / 2 / dataset.train.num_examples
+        cost = tf.reduce_sum(sda) # + (tf.reduce_sum(tf.square(h1w)) +
+                                  #    tf.reduce_sum(tf.square(h2w)) +
+                                  #    tf.reduce_sum(tf.square(outw))) * lmbda / 2 / dataset.train.num_examples
 
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
-        # tf.scalar_summary('x_entropy', cross_entropy)
         tf.scalar_summary('cost', cost)
+        pollbias = tf.reduce_sum(p1b)
+        tf.scalar_summary('biases', pollbias)
 
         init = tf.initialize_all_variables()
 
@@ -52,7 +86,7 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
         #execution
         with tf.Session() as sess:
             sess.run(init)
-            summary_writer = tf.train.SummaryWriter('/home/bogdan/work/ml-tloe/summary', graph_def=sess.graph_def)
+            summary_writer = tf.train.SummaryWriter('/home/julfy/work/ml-tloe/summary', graph_def=sess.graph_def)
             #training
             for epoch in range(training_epochs):
                 avg_cost = 0.
