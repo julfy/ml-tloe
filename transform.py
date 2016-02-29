@@ -28,7 +28,7 @@ def process(jsn): #still no anchors
         s_h1 = mysplit(str(res['h1']).lower())
         s_h2 = mysplit(str(res['h2']).lower())
         s_domain = mysplit(urlp.hostname.lower())
-        
+
         m_content = check_match (s_key, s_content)
         # e_content = int(m_content)
         m_url = check_match (s_key, s_url)
@@ -41,7 +41,7 @@ def process(jsn): #still no anchors
         for a in res['anchors']:
             if check_match(s_key,mysplit(a.get('anchor',"").lower())) > 0:
                 m_anchor += a.get('backlinks',0)
-        
+
         url_len = len(urlp.hostname) - (4 if urlp.hostname[:4] == 'www.' else 0)
         title_len = len(s_title)
         h1_len = len(s_h1)
@@ -50,11 +50,11 @@ def process(jsn): #still no anchors
 
         content_occurence = sum([1 if word in jsn['keyword'] else 0 for word in s_content])
 
-        
-        
         metrics = res['metrics']
         social = [0,0,0,0,0,0,0,0,0] if res['social'] == [] else res['social']
-        label = 1 if i < 10 else 0
+        if i > 100:
+            print '.',
+        label = (i if i <= 100 else 100) / 100.0
         inp = ([label] +
                social +
                [res['ahrefs_rank'], #mb take average if -1
@@ -130,4 +130,3 @@ def transform_data(dir, outd, num=0):
                 writer.writerows(data)
         i = i + 1
     print "Transformed", i, "files (", failed, "failed ) to", outs + 1, "files"
-

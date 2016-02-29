@@ -12,7 +12,7 @@ display_step = 100
 num_inputs = 41
 NUM_CLASSES = 1
 
-def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
+def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2, threshold):
     P1 = 10
     # description
     with tf.Graph().as_default():
@@ -40,7 +40,7 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
         p3b = tf.Variable(tf.zeros([P1]), name='p3b')
         p4b = tf.Variable(tf.zeros([P1]), name='p4b')
         p5b = tf.Variable(tf.zeros([P1]), name='p5b')
-        
+
         h2w = tf.Variable(tf.truncated_normal([P1*5,H2], stddev = 1.0 / math.sqrt(float(P1*5))), name="h2w")
         h2b = tf.Variable(tf.zeros([H2]), name='h2b')
 
@@ -53,7 +53,7 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
             h13 = tf.nn.relu (tf.matmul(_x, h13w) + h3b, name='h13')
             h14 = tf.nn.relu (tf.matmul(_x, h14w) + h4b, name='h14')
             h15 = tf.nn.relu (tf.matmul(_x, h15w) + h5b, name='h15')
-            
+
             p11 = tf.nn.relu (tf.matmul(h11, p11w) + p1b, name='p11')
             p12 = tf.nn.relu (tf.matmul(h12, p12w) + p2b, name='p12')
             p13 = tf.nn.relu (tf.matmul(h13, p13w) + p3b, name='p13')
@@ -103,18 +103,18 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2):
 
                 summary_str = sess.run(merged_summary_op, feed_dict={x: batch_xs, y: batch_ys})
                 summary_writer.add_summary(summary_str, epoch*total_batch + i)
-
             print "Optimization Finished!"
-            correct_prediction_p = tf.cast(tf.equal(tf.round(pred), y),'float') * y
-            correct_prediction_n = tf.cast(tf.equal(tf.round(pred), y),'float') * (1 - y)
-            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(y)
-            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(1 - y)
-            v_acc_p = accuracy_p.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
-            v_acc_n = accuracy_n.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
+
+            correct_prediction_p = tf.logical_and(tf.less_equal(pred, threshold), tf.less_equal(y, threshold))
+            correct_prediction_n = tf.logical_and(tf.greater(pred, threshold), tf.greater(y, threshold))
+            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(tf.cast(tf.less_equal(y, threshold), 'float'))
+            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(tf.cast(tf.greater(y, threshold), 'float'))
 
             t_acc_p = accuracy_p.eval({x: dataset.train.inputs, y: dataset.train.labels})
             t_acc_n = accuracy_n.eval({x: dataset.train.inputs, y: dataset.train.labels})
             print "Train Accuracy:", t_acc_p, " ", t_acc_n
 
-            print "Accuracy:", v_acc_p, " ", v_acc_n
+            v_acc_p = accuracy_p.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
+            v_acc_n = accuracy_n.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
+            print "Validation Accuracy:", v_acc_p, " ", v_acc_n
             return float(1.0 - v_acc_n * v_acc_p)
