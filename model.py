@@ -12,10 +12,13 @@ display_step = 100
 num_inputs = 41
 NUM_CLASSES = 1
 
-def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2, threshold):
-    P1 = 10
-    # description
-    with tf.Graph().as_default():
+P1 = 10
+
+with tf.Graph().as_default():
+    
+    def create (H1, H2):
+        global x, y, h11w, h12w, h13w, h14w, h15w, h1b, h2b, h3b, h4b, h5b, \
+            p11w, p12w, p13w, p14w, p15w, p1b, p2b, p3b, p4b, p5b, h2w, h2b, outw, smb
         x = tf.placeholder("float", [None, num_inputs])
         y = tf.placeholder("float", [None, NUM_CLASSES])
 
@@ -47,6 +50,12 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2, thresho
         outw = tf.Variable(tf.truncated_normal([H2, NUM_CLASSES], stddev = 1.0 / math.sqrt(float(H2))), name="outw")
         smb = tf.Variable(tf.zeros([NUM_CLASSES]), name='outb')
 
+    def train (dataset, learning_rate, batch_size, lmbda, ermul, threshold, save=0, name='saved', restore=False, train = True):
+
+        saver = tf.train.Saver()
+
+        # GRAPH
+        
         def feed(_x):
             h11 = tf.nn.relu (tf.matmul(_x, h11w) + h1b, name='h11')
             h12 = tf.nn.relu (tf.matmul(_x, h12w) + h2b, name='h12')
@@ -82,11 +91,15 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2, thresho
         init = tf.initialize_all_variables()
 
         merged_summary_op = tf.merge_all_summaries()
-
+        
         #execution
         with tf.Session() as sess:
             sess.run(init)
-            summary_writer = tf.train.SummaryWriter('/home/julfy/work/ml-tloe/summary', graph_def=sess.graph_def)
+            if restore:
+                print "Restoring ", tf.train.latest_checkpoint('.')
+                saver.restore(sess, tf.train.latest_checkpoint('.'))
+            summary_writer = tf.train.SummaryWriter('/home/julfy/work/ml-tloe/run/summary', graph_def=sess.graph_def)
+
             #training
             for epoch in range(training_epochs):
                 avg_cost = 0.
@@ -103,7 +116,57 @@ def train_once (dataset,learning_rate, batch_size, lmbda, ermul, H1, H2, thresho
 
                 summary_str = sess.run(merged_summary_op, feed_dict={x: batch_xs, y: batch_ys})
                 summary_writer.add_summary(summary_str, epoch*total_batch + i)
+                if save > 0 and epoch % save == 0:
+                    saver.save(sess, name, global_step = epoch)
+            saver.save(sess, name, global_step = epoch)
             print "Optimization Finished!"
+
+            correct_prediction_p = tf.logical_and(tf.less_equal(pred, threshold), tf.less_equal(y, threshold))
+            correct_prediction_n = tf.logical_and(tf.greater(pred, threshold), tf.greater(y, threshold))
+            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(tf.cast(tf.less_equal(y, threshold), 'float'))
+            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(tf.cast(tf.greater(y, threshold), 'float'))
+
+            t_acc_p = accuracy_p.eval({x: dataset.train.inputs, y: dataset.train.labels})
+            t_acc_n = accuracy_n.eval({x: dataset.train.inputs, y: dataset.train.labels})
+            print "Train Accuracy:", t_acc_p, " ", t_acc_n
+
+            v_acc_p = accuracy_p.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
+            v_acc_n = accuracy_n.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
+            print "Validation Accuracy:", v_acc_p, " ", v_acc_n
+            return float(1.0 - v_acc_n * v_acc_p)
+
+    def run (dataset, threshold):
+        saver = tf.train.Saver()
+
+        # GRAPH
+        
+        def feed(_x):
+            h11 = tf.nn.relu (tf.matmul(_x, h11w) + h1b, name='h11')
+            h12 = tf.nn.relu (tf.matmul(_x, h12w) + h2b, name='h12')
+            h13 = tf.nn.relu (tf.matmul(_x, h13w) + h3b, name='h13')
+            h14 = tf.nn.relu (tf.matmul(_x, h14w) + h4b, name='h14')
+            h15 = tf.nn.relu (tf.matmul(_x, h15w) + h5b, name='h15')
+
+            p11 = tf.nn.relu (tf.matmul(h11, p11w) + p1b, name='p11')
+            p12 = tf.nn.relu (tf.matmul(h12, p12w) + p2b, name='p12')
+            p13 = tf.nn.relu (tf.matmul(h13, p13w) + p3b, name='p13')
+            p14 = tf.nn.relu (tf.matmul(h14, p14w) + p4b, name='p14')
+            p15 = tf.nn.relu (tf.matmul(h15, p15w) + p5b, name='p15')
+
+            p1 = tf.concat(1, [p11, p12, p13, p14, p15], name = 'merge')
+            h2 = tf.nn.relu (tf.matmul(p1, h2w) + h2b, name = 'h2')
+            out = tf.sigmoid (tf.matmul(h2, outw) + smb, name = 'out')
+            return out
+
+        normed = tf.nn.l2_normalize(x,1)
+        pred = feed(normed)
+
+        init = tf.initialize_all_variables()
+        
+        with tf.Session() as sess:
+            sess.run(init)
+            print "Restoring ", tf.train.latest_checkpoint('.')
+            saver.restore(sess, tf.train.latest_checkpoint('.'))
 
             correct_prediction_p = tf.logical_and(tf.less_equal(pred, threshold), tf.less_equal(y, threshold))
             correct_prediction_n = tf.logical_and(tf.greater(pred, threshold), tf.greater(y, threshold))

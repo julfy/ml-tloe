@@ -12,7 +12,7 @@ import numpy as np
 #     maxs = np.amax(positive,axis=0)
 #     return np.true_divide(positive,maxs)
 
-def extract_data (dir):
+def extract_data (dir,num):
     filelist = glob.glob(dir)
     inps = []
     labels = []
@@ -26,6 +26,10 @@ def extract_data (dir):
         else:
             inps = np.append(inps, data[:,1:], axis=0)
             labels = np.append(labels, data[:,0], axis=0)
+        if num > 0 and len(inps) >= num:
+            inps = inps[:num]
+            labels = labels[:num]
+            break
     return inps, labels[:,None]
 
 class DataSet(object):
@@ -95,8 +99,7 @@ def read_data_sets(datad, validation, test, dtype=tf.float32, num=0):
     pass
   data_sets = DataSets()
 
-  data, labels = extract_data(datad) if num == 0 else extract_data(datad)[:num]
-
+  data, labels = extract_data(datad,num)
   size = len(labels)
   validation_s = int(size * validation)
 
