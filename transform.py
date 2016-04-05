@@ -52,11 +52,20 @@ def process(jsn): #still no anchors
 
         metrics = res['metrics']
         social = [0,0,0,0,0,0,0,0,0] if res['social'] == [] else res['social']
-        if i > 100:
-            print '.',
-        label = (i if i <= 100 else 100) / 100.0
+        # label = (i if i <= 100 else 100) / 100.0
+        label = 1 if i < 10 else 0
+
+
         inp = ([label] +
                social +
+
+
+
+
+
+
+
+
                [res['ahrefs_rank'], #mb take average if -1
                 res['domain_rating'], #mb take average if -1
                 metrics.get('backlinks',0),
@@ -105,6 +114,7 @@ def transform_data(dir, outd, num=0):
     outs = 0
     limit = 100000 #rows
     cur = 0
+    print "Transforming", dir
     for filename in filelist:
         if num > 0 and i >= num:
             break

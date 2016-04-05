@@ -10,16 +10,17 @@ import numpy
 #          hp.quniform('shl', 10, 200, 10)]
 
 numpy.set_printoptions(threshold='nan')
+numpy.set_printoptions(precision=2)
 
 transform.transform_data ("/home/bogdan/work/repos/ml-tloe/serps/results/*", 'expanded', 10000)
 
-data = load.read_data_sets ('expanded/*',0.3,0.1, num = 10000);
+data = load.read_data_sets ('expanded/*',0.3,0.1, num = 00000);
 
-model.create ( H1=100, H2=50 )
+model.create ( H1=1, H2=50 )
 
-# model.train (data, learning_rate=0.05, batch_size=1000, lmbda=0, ermul=1, threshold=0.1, restore=False)
+# model.train (data, learning_rate=0.001, batch_size=100000, lmbda=0, ermul=10000, restore=False)
 
-# model.run(data, 0.1)
+model.run(data)
 
 ################################################################################
 # def cost ((lr, bs, fhl, shl)):

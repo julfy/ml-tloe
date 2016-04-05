@@ -8,7 +8,7 @@ LOGDIR = '/home/bogdan/work/repos/ml-tloe/run/summary'
 # NUM_CLASSES = 10
 # num_inputs = 31
 
-training_epochs = 750
+training_epochs = 101
 display_step = 100
 
 num_inputs = 41
@@ -33,7 +33,7 @@ with tf.Graph().as_default():
         outw = tf.Variable(tf.truncated_normal([H2, NUM_CLASSES], stddev = 1.0 / math.sqrt(float(H2))), name="outw")
         smb = tf.Variable(tf.zeros([NUM_CLASSES]), name='outb')
 
-    def train (dataset, learning_rate, batch_size, lmbda, ermul, threshold, save=0, name='saved', restore=False, train = True):
+    def train (dataset, learning_rate, batch_size, lmbda, ermul, save=0, name='saved', restore=False, train = True):
 
         saver = tf.train.Saver()
 
@@ -92,10 +92,10 @@ with tf.Graph().as_default():
             saver.save(sess, name, global_step = epoch)
             print "Optimization Finished!"
 
-            correct_prediction_p = tf.logical_and(tf.less_equal(pred, threshold), tf.less_equal(y, threshold))
-            correct_prediction_n = tf.logical_and(tf.greater(pred, threshold), tf.greater(y, threshold))
-            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(tf.cast(tf.less_equal(y, threshold), 'float'))
-            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(tf.cast(tf.greater(y, threshold), 'float'))
+            correct_prediction_p = tf.cast(tf.equal(tf.round(pred), y),'float') * y
+            correct_prediction_n = tf.cast(tf.equal(tf.round(pred), y),'float') * (1 - y)
+            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(y)
+            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(1 - y)
 
             t_acc_p = accuracy_p.eval({x: dataset.train.inputs, y: dataset.train.labels})
             t_acc_n = accuracy_n.eval({x: dataset.train.inputs, y: dataset.train.labels})
@@ -106,7 +106,7 @@ with tf.Graph().as_default():
             print "Validation Accuracy:", v_acc_p, " ", v_acc_n
             return float(1.0 - v_acc_n * v_acc_p)
 
-    def run (dataset, threshold):
+    def run (dataset):
         saver = tf.train.Saver()
 
         # GRAPH
@@ -127,10 +127,10 @@ with tf.Graph().as_default():
             print "Restoring ", tf.train.latest_checkpoint('.')
             saver.restore(sess, tf.train.latest_checkpoint('.'))
 
-            correct_prediction_p = tf.logical_and(tf.less_equal(pred, threshold), tf.less_equal(y, threshold))
-            correct_prediction_n = tf.logical_and(tf.greater(pred, threshold), tf.greater(y, threshold))
-            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(tf.cast(tf.less_equal(y, threshold), 'float'))
-            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(tf.cast(tf.greater(y, threshold), 'float'))
+            correct_prediction_p = tf.cast(tf.equal(tf.round(pred), y),'float') * y
+            correct_prediction_n = tf.cast(tf.equal(tf.round(pred), y),'float') * (1 - y)
+            accuracy_p = tf.reduce_sum(tf.cast(correct_prediction_p, 'float')) / tf.reduce_sum(y)
+            accuracy_n = tf.reduce_sum(tf.cast(correct_prediction_n, 'float')) / tf.reduce_sum(1 - y)
 
             t_acc_p = accuracy_p.eval({x: dataset.train.inputs, y: dataset.train.labels})
             t_acc_n = accuracy_n.eval({x: dataset.train.inputs, y: dataset.train.labels})
@@ -139,4 +139,12 @@ with tf.Graph().as_default():
             v_acc_p = accuracy_p.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
             v_acc_n = accuracy_n.eval({x: dataset.validation.inputs, y: dataset.validation.labels})
             print "Validation Accuracy:", v_acc_p, " ", v_acc_n
+
+            ls = ["social1","social2","social3","social4","social5","social6","social7","social8","social9","ahrefs-rank","dom-rating","bckl","refpages","pages","text","image","not-sitewide","no-foll","do-foll","edu","rss","html-pages","int-links","ext-links","refdomains","refclass_c","refips","linked-root","match-content","match-url","match-title","match-h1","match-h2","match-domain","match-anchor","url-len","title-len","h1-len","h2-len","cont-len","cont-occur"]
+            w = tf.reduce_sum(tf.abs(h11w),1)# / tf.reduce_max(tf.reduce_sum(tf.abs(h11w),1))
+            w = w.eval()
+            for i in range(41):
+                print ls[i], "  ", w[i]
+
+
             return float(1.0 - v_acc_n * v_acc_p)
